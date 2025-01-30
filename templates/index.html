@@ -19,6 +19,53 @@
             margin-top: 20px;
         }
 
+        /* メインコンテンツエリアのレイアウト */
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin: 20px auto;
+            max-width: 1600px;
+        }
+
+        /* 左側のマップエリア */
+        .map-area {
+            flex: 1;
+            min-width: 300px;
+            order: 1;
+            /* デフォルトの順序 */
+        }
+
+        /* 右側のデバッグエリア */
+        .debug-area {
+            width: 400px;
+            flex-shrink: 0;
+            order: 2;
+            /* デフォルトの順序 */
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .debug-area {
+                width: 100%;
+                order: 1;
+                /* モバイル表示時は上に配置 */
+            }
+
+            .map-area {
+                min-width: 100%;
+                order: 2;
+                /* モバイル表示時は下に配置 */
+            }
+
+            .debug-container {
+                margin: 0 0 20px 0;
+                /* 上下のマージンを調整 */
+            }
+        }
+
         .form-group {
             margin-bottom: 15px;
         }
@@ -29,8 +76,7 @@
             font-weight: bold;
         }
 
-        input[type="text"],
-        select {
+        input[type="text"] {
             width: 100%;
             padding: 8px;
             margin: 5px 0;
@@ -42,18 +88,21 @@
         .map-container {
             position: relative;
             width: 100%;
-            max-width: 1000px;
-            margin: 20px auto;
+            margin: 0 auto;
             background-color: #f0f0f0;
             border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
+            aspect-ratio: 1;
+            /* 正方形を維持 */
         }
 
         .map-svg {
             width: 100%;
-            height: auto;
+            height: 100%;
             display: block;
+            object-fit: contain;
+            /* アスペクト比を保持 */
         }
 
         .marker-button {
@@ -104,6 +153,36 @@
             background-color: #f8f9fa;
             text-decoration: underline;
         }
+
+        .debug-section {
+            margin-bottom: 20px;
+        }
+
+        .debug-section h3 {
+            margin: 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .prefecture-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .prefecture-list li {
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .prefecture-list li:last-child {
+            border-bottom: none;
+        }
+
+        .selected-prefecture {
+            background-color: #e3f2fd;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -111,15 +190,6 @@
     <h1>Google Maps URLからピンを生成</h1>
     <div class="form-container">
         <form id="mapForm" onsubmit="return handleSubmit(event)">
-            <div class="form-group">
-                <label for="prefecture">都道府県:</label>
-                <select id="prefecture" name="prefecture" required>
-                    <option value="">選択してください</option>
-                    {% for id, name in prefectures.items() %}
-                    <option value="{{ id }}">{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
             <div class="form-group">
                 <label for="maps_url">Google Maps URL:</label>
                 <input type="text" id="maps_url" name="maps_url"
@@ -129,19 +199,40 @@
         </form>
     </div>
 
-    <div class="map-container" id="mapContainer">
-        <!-- SVG地図がここに表示されます -->
-    </div>
-
-    <div class="debug-container" id="debugContainer" style="display: none;">
-        <h2>デバッグ情報</h2>
-        <div class="debug-info" id="debugInfo">
-            <!-- デバッグ情報がここに表示されます -->
+    <div class="main-content">
+        <div class="map-area">
+            <div class="map-container" id="mapContainer">
+                <!-- SVG地図がここに表示されます -->
+            </div>
         </div>
-        <h2>Google Maps URL</h2>
-        <a id="mapsLink" class="maps-link" href="#" target="_blank">
-            <!-- Google Maps URLがここに表示されます -->
-        </a>
+
+        <div class="debug-area">
+            <div class="debug-container" id="debugContainer" style="display: none;">
+                <h2>デバッグ情報</h2>
+                <div class="debug-section">
+                    <h3>選択された都道府県</h3>
+                    <div id="selectedPrefecture" class="debug-info">
+                        <!-- 選択された都道府県の情報がここに表示されます -->
+                    </div>
+                </div>
+                <div class="debug-section">
+                    <h3>候補都道府県一覧</h3>
+                    <div id="candidatePrefectures" class="debug-info">
+                        <!-- 候補都道府県の情報がここに表示されます -->
+                    </div>
+                </div>
+                <div class="debug-section">
+                    <h3>座標情報</h3>
+                    <div id="debugInfo" class="debug-info">
+                        <!-- その他のデバッグ情報がここに表示されます -->
+                    </div>
+                </div>
+                <h2>Google Maps URL</h2>
+                <a id="mapsLink" class="maps-link" href="#" target="_blank">
+                    <!-- Google Maps URLがここに表示されます -->
+                </a>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -164,6 +255,8 @@
                 const mapContainer = document.getElementById('mapContainer');
                 const debugContainer = document.getElementById('debugContainer');
                 const debugInfo = document.getElementById('debugInfo');
+                const selectedPrefecture = document.getElementById('selectedPrefecture');
+                const candidatePrefectures = document.getElementById('candidatePrefectures');
                 const mapsLink = document.getElementById('mapsLink');
 
                 // SVG要素を追加
@@ -180,21 +273,32 @@
                 const percentY = (data.coordinates.y / data.coordinates.height) * 100;
 
                 // マーカーの位置を設定
-                // 目視で適当に調整した
-                marker.style.left = `${percentX - 5}%`;
+                marker.style.left = `${percentX}%`;
                 marker.style.top = `${percentY}%`;
 
                 mapContainer.appendChild(marker);
 
-                // マーカーをアクティブ化
-                // デバッグ情報を表示
-                const debug = data.debug_info;
-                debugInfo.textContent = `=== 座標変換デバッグ情報 ===
-                入力座標: 緯度=${debug.input_coords.lat}, 経度=${debug.input_coords.lng}
-                地図範囲: 緯度=${debug.map_bounds.min_lat}～${debug.map_bounds.max_lat}, 経度=${debug.map_bounds.min_lng}～${debug.map_bounds.max_lng}
-                SVGサイズ: 幅=${debug.svg_size.width}, 高さ=${debug.svg_size.height}
-                変換後のSVG座標: x=${debug.output_coords.x}, y=${debug.output_coords.y}
-                ========================`;
+                // 選択された都道府県の情報を表示
+                selectedPrefecture.textContent = `${data.prefecture.name}（${data.prefecture.code}）`;
+
+                // 候補都道府県リストを表示
+                const candidates = data.debug_info.candidate_prefectures;
+                const candidatesList = document.createElement('ul');
+                candidatesList.className = 'prefecture-list';
+                candidates.forEach(pref => {
+                    const li = document.createElement('li');
+                    if (pref.id === data.prefecture.id) {
+                        li.className = 'selected-prefecture';
+                    }
+                    li.textContent = `${pref.name}（${pref.code}）`;
+                    candidatesList.appendChild(li);
+                });
+                candidatePrefectures.innerHTML = '';
+                candidatePrefectures.appendChild(candidatesList);
+
+                // その他のデバッグ情報を表示
+                const { candidate_prefectures, ...otherDebugInfo } = data.debug_info;
+                debugInfo.textContent = JSON.stringify(otherDebugInfo, null, 2);
 
                 // Google Maps URLを設定
                 const mapsUrl = formData.get('maps_url');

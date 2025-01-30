@@ -1,20 +1,26 @@
-FROM python:3.11-slim
+FROM python:3.9-slim
+
+# システムの依存関係をインストール
+RUN apt-get update && apt-get install -y \
+    libcairo2-dev \
+    libgirepository1.0-dev \
+    pkg-config \
+    python3-dev \
+    gir1.2-rsvg-2.0 \
+    libglib2.0-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# 依存関係のインストール
+# Pythonパッケージの依存関係をコピーしてインストール
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# アプリケーションのコピー
+# アプリケーションのコードをコピー
 COPY . .
 
-# 実行時の設定
-ENV FLASK_APP=main.py
-ENV FLASK_DEBUG=0
-
-# ポートの設定
+# ポート8080を公開
 EXPOSE 8080
 
-# 起動コマンド（ログレベルをwarningに設定）
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "120", "--log-level", "warning", "main:app"] 
+# Flaskアプリケーションを実行
+CMD ["python", "main.py"] 

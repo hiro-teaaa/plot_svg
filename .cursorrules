@@ -1,0 +1,100 @@
+<ai_assistant_instructions>
+Please follow these instructions to perform tasks efficiently and accurately.
+
+First, verify the user’s request:
+
+<user_instructions>
+{{instructions}}
+</user_instructions>
+
+Once confirmed, follow the process below:
+1. task_analysis
+2. execution_process
+
+<task_analysis>
+- Provide a concise summary of the main tasks.
+- Identify key requirements and constraints.
+- List any potential challenges.
+- Outline specific steps needed to complete the task.
+- Determine the optimal order for these steps.
+- Consider the tools and resources mentioned in the system prompt.
+- If needed, check the directory structure (e.g., using `ls -R`).
+- You may use the `run_terminal_cmd` function without requesting additional permission.
+
+Offer a thorough and comprehensive analysis in this section. Extend its length if necessary.
+</task_analysis>
+
+<execution_process>
+0. Pre-Execution
+   - Confirm the directory structure (e.g., `ls -R`) to ensure correctness.
+   - Document a detailed plan in `.cursor_workspace/planning_YYYYMMDD_HHMMSS.md`. 
+     If this file does not exist, create it and include all relevant details.
+
+1. Task Execution
+   - Implement the steps from the task analysis in order.
+   - After each step, provide a concise progress update.
+   - Immediately report any issues or questions, and propose potential solutions.
+   - Keep the overall readability high.
+   - Comments can be written in Japanese if necessary.
+
+2. Testing Strategy
+   - **Unit Tests**  
+     - Validate each module or function individually.
+     - Use a test framework if needed.  
+     - If a test fails, fix the code and retest promptly.  
+   - **Integration Tests**  
+     - After unit testing, integrate related modules and confirm overall system consistency.
+     - Check for issues in inter-module dependencies and interactions.  
+     - If a test fails, fix the issue and retest. If needed, revert to unit testing to isolate the problem.
+
+3. Quality Control
+   - Quickly verify each step’s outcome (including test results).
+   - Correct any errors or inconsistencies on the spot.
+   - Whenever commands are executed, confirm and note the standard output.
+
+4. Verification
+   - Upon completion, review the deliverable in full.
+   - Ensure it aligns with the user’s original instructions and make adjustments if needed.
+
+5. Pull Request
+   - After all tasks are done, document your changes in pull request form:
+     1. `git add .`
+     2. `git commit -m "commit message"`
+     3. In `.cursor_workspace/pull_request_YYYYMMDD_HHMMSS.md`, describe your changes **in Japanese** with the following format:
+       <pull_request_format>
+       ```markdown
+       # issue
+       <What instructions were given, what problems occurred, and how were they addressed?>
+       # policy
+       <What approach or policy was followed?>
+       # changes
+       <Which modifications were made?>
+       # tests
+       <Which tests were performed and their outcomes?>
+       1. 
+       
+       # commit
+       <The hash of the commit you added>
+       ```
+       </pull_request_format>
+
+6. Completion Notification
+   - After tests have successfully completed or your overall tasks are finished, run a command to notify the user on macOS:
+     ```sh
+     osascript -e 'display notification "エンドポイントのテストが完了しました" with title "Cursor AI"'
+     ```
+   - Use the `run_terminal_cmd` function to execute the above command without additional user permission, for example:
+     ```json
+     {
+       "command": "osascript -e 'display notification \"エンドポイントのテストが完了しました\" with title \"Cursor AI\"'",
+       "is_background": false,
+       "require_user_approval": false
+     }
+     ```
+
+</execution_process>
+
+<execution_tips>
+- When attempting to pass a test, do so step by step.
+- If the same test fails more than three times, outline your current approach and any uncertainties, then ask questions as needed.
+</execution_tips>
