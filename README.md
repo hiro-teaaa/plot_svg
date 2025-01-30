@@ -5,13 +5,14 @@ Google MapのURLを入力すると、特定都道府県向けに線形変換し�
 # Google Maps URLからSVGプロットまでの仕様説明
 
 このドキュメントでは、Google Maps URLから座標を取得し、SVG上にプロットするまでの一連の処理について説明します。
+
 ## 基本的な考え
 都道府県の北緯東経範囲を調べ、南北端緯度.東西端経度を定義し、それをSVGの4端に対応させて位置合わせを実現します。
 
-例えば青森県は緯度40度12分から41度33分、経度139度30分から141度41分の間にあるので、以下のように定義できます。
+例えば青森県は[緯度40度12分から41度33分、経度139度30分から141度41分の間にある](https://www.pref.aomori.lg.jp/k-kensei/sugata.html#:~:text=青森県は、北緯40,に位置しています%E3%80%82)ので、以下のように定義できます。
 
-https://www.pref.aomori.lg.jp/k-kensei/sugata.html#:~:text=青森県は、北緯40,に位置しています%E3%80%82
-'''
+
+```python
 'aomori': {
         'name': '青森県',
         'code': 2,  # 都道府県コード
@@ -25,7 +26,7 @@ https://www.pref.aomori.lg.jp/k-kensei/sugata.html#:~:text=青森県は、北緯
         'default_width': 2107,      # SVGのviewBox幅に合わせる
         'default_height': 2044      # SVGのviewBox高さに合わせる
     }
-'''
+```
 
 さらにSVGのwidth/heightを定義し、SVGの端がこの東西南北端に対応していると仮定すれば、受け取った緯度経度情報をSVG上座標として変換することができます。
 width / lat をしてやれば緯度1度あたりのsvg座標距離が求められます。
